@@ -1,0 +1,33 @@
+{
+    "name": "jiramark",
+    "description": "Parser for the JIRA markup language",
+    "version": "0.1.0",
+    "author": "Joyent (joyent.com)",
+    "keywords": [
+        "jira"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/joyent/node-jiramark.git"
+    },
+    "bugs": {
+        "url": "https://github.com/joyent/node-jiramark/issues"
+    },
+    "main": "lib/index.js",
+    "dependencies": {
+        "assert-plus": "~1.0.0",
+        "ent": "2.0.0",
+        "ohm-js": "~0.14.0"
+    },
+    "devDependencies": {
+        "istanbul": "^0.3.6",
+        "faucet": "0.0.1",
+        "tape": "^3.5.0",
+        "eslint": "4.13.1",
+        "eslint-plugin-joyent": "~2.1.0"
+    },
+    "scripts": {
+        "test": "./node_modules/.bin/tape ./test/*.test.js"
+    },
+    "license": "MPL-2.0"
+}

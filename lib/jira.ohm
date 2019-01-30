@@ -1,0 +1,79 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+/*
+ * Copyright 2019, Joyent, Inc.
+ */
+
+/*
+ * jiramark: JIRA markup grammar
+ */
+JIRA {
+  Document = blocks block?
+
+  blocks = (block nl+)*
+
+  block
+   = heading space+ words -- header
+   | readUntil<"noformat"> -- noformat
+   | readUntil<"code"> -- code
+   | namedBlock<"panel"> -- panel
+   | namedBlock<"quote"> -- quote
+   | namedBlock<"color"> -- color
+   | bq space+ words -- blockquote
+   | (bullet space+ words nl)+ -- list
+   | (words paraEnd)+ -- paragraph
+
+  paraEnd
+   = nl -- newline
+   | &blockStart -- blockStart
+
+  readUntil<nm> = "{" nm options? "}" upToThreeNl (~("{" nm) any)* "{" nm "}"
+  namedBlock<nm> = "{" nm options? "}" nl? (~("{" nm) block nl*)* (~("{" nm) block)? "{" nm "}"
+  upToThreeNl = nl? nl? nl?
+
+  options = ":" (~"}" (ident | space))*
+
+  heading = "h1." | "h2." | "h3." | "h4." | "h5." | "h6."
+  bullet = ("#" | "-" | "*")+
+  bq = "bq."
+
+  words = word+
+
+  word
+   = "[" (~"|" simpleWord)+ "|" uri "]" -- link1
+   | "[" uri "]" -- link2
+   | ~reserved ident+ -- basic
+   | simpleWord
+
+  simpleWord
+   = "{{" ~space (~"}}" simpleWord)+ "}}" -- monospace
+   | "??" ~space (~"??" simpleWord)+ "??" -- citation
+   | "*" ~space (~"*" simpleWord)+ "*" -- strong
+   | "_" ~space (~"_" simpleWord)+ "_" -- emphasis
+   | "~" ~space (~"~" simpleWord)+ "~" -- subscript
+   | "^" ~space (~"^" simpleWord)+ "^" -- superscript
+   | "-" ~space (~"-" simpleWord)+ "-" -- deleted
+   | "+" ~space (~"+" simpleWord)+ "+" -- inserted
+   | ident
+   | space
+
+  space := " " | "\t"
+
+  nl = "\n" | "\r"
+
+  blockStart = "{quote" | "{panel" | "{color" | "{noformat" | "{code"
+  reserved = "*" | "{" | "}" | "_" | "~" | "-" | "+" | "^" | "[" | "]" | "|" | "??" | "\\"
+
+  ident = ~blockStart (chars | reserved)
+
+  chars = (entchar | escchar | regchar)+
+  entchar (an HTML entity) = "&" "#"? alnum+ ";"
+  escchar (an escape sequence) = "\\" reserved
+  regchar (a regular character) = ~(space | nl | reserved) any
+
+  uri (a URI) = (alnum | "!" | "\u0023".."\u002F" | ":" | ";" | "=" | "?" | "@" | "_" | "~")+
+}
