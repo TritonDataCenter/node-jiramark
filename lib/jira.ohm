@@ -12,9 +12,13 @@
  * jiramark: JIRA markup grammar
  */
 JIRA {
-  Document = blocks block?
+  Document = blocks tblock?
 
-  blocks = (block nl+)*
+  blocks = (tblock (space* nl)+)*
+
+  tblock
+   = block
+   | (words (&paraEnd | nl))+ -- paragraph
 
   block
    = heading space+ words -- header
@@ -24,56 +28,79 @@ JIRA {
    | namedBlock<"quote"> -- quote
    | namedBlock<"color"> -- color
    | bq space+ words -- blockquote
-   | (bullet space+ words nl)+ -- list
-   | (words paraEnd)+ -- paragraph
+   | (bullet (space* ~bullet (block | words) nl)+)+ -- list
 
   paraEnd
-   = nl -- newline
-   | &blockStart -- blockStart
+   = nl? heading -- headStart
+   | nl? blockStart -- blockStart
+   | nl? bq -- bqStart
+   | nl? bullet -- listStart
+   | nl space* nl -- blankStart
 
-  readUntil<nm> = "{" nm options? "}" upToThreeNl (~("{" nm) any)* "{" nm "}"
-  namedBlock<nm> = "{" nm options? "}" nl? (~("{" nm) block nl*)* (~("{" nm) block)? "{" nm "}"
+  readUntil<nm> = space* "{" nm options? "}" upToThreeNl (~("{" nm) any)* "{" nm "}"
+  namedBlock<nm> = space* "{" nm options? "}" nl* (~("{" nm) tblock nl*)* (~("{" nm) tblock)? "{" nm "}"
   upToThreeNl = nl? nl? nl?
 
   options = ":" (~"}" (ident | space))*
 
   heading = "h1." | "h2." | "h3." | "h4." | "h5." | "h6."
-  bullet = ("#" | "-" | "*")+
   bq = "bq."
 
-  words = word+
+  bullet = space* point (bullet | space)
+  point (a bullet point) = "#" | "-" | "*"
+
+  words
+   = formatted+ word* -- type1
+   | word+ -- type2
 
   word
-   = "[" (~"|" simpleWord)+ "|" uri "]" -- link1
-   | "[" uri "]" -- link2
-   | ~reserved ident+ -- basic
+   = ~punct ~bareurl ident+ -- basic
    | simpleWord
 
   simpleWord
-   = "{{" ~space (~"}}" simpleWord)+ "}}" -- monospace
-   | "??" ~space (~"??" simpleWord)+ "??" -- citation
-   | "*" ~space (~"*" simpleWord)+ "*" -- strong
-   | "_" ~space (~"_" simpleWord)+ "_" -- emphasis
-   | "~" ~space (~"~" simpleWord)+ "~" -- subscript
-   | "^" ~space (~"^" simpleWord)+ "^" -- superscript
-   | "-" ~space (~"-" simpleWord)+ "-" -- deleted
-   | "+" ~space (~"+" simpleWord)+ "+" -- inserted
+   = "[" simpleWordUntil<"|"> "|" space* uri space* "]" -- link1
+   | "[" ~"~" uri "]" -- link2
+   | "[~" (~"]" (ident | space))+ "]" -- user
+   | "{{" simpleWordUntil<"}}"> "}}" -- monospace
+   | (space | ~formchar punct) formatted+ -- formatted
+   | bareurl
    | ident
    | space
 
+  formatted
+   = "??" ~space simpleWordUntil<"??"> "??" -- citation
+   | "*" ~space simpleWordUntil<"*"> "*" -- strong
+   | "_" ~space simpleWordUntil<"_"> "_" -- emphasis
+   | "~" ~space simpleWordUntil<"~"> "~" -- subscript
+   | "^" ~space simpleWordUntil<"^"> "^" -- superscript
+   | "-" ~space simpleWordUntil<"-"> "-" -- deleted
+   | "+" ~space simpleWordUntil<"+"> "+" -- inserted
+
+  simpleWordUntil<stop>
+   = ~stop formatted (~stop simpleWord)* -- multiple
+   | (~stop simpleWord)+ -- simple
+
+  bareurl = "http" "s"? "://" (~urlend urichar)+
+  urlend = urlexcl* ~urichar
+  urlexcl = "." | ")" | "!" | "," | "'"
+
   space := " " | "\t"
 
-  nl = "\n" | "\r"
+  nl (a newline) = "\r\n" | "\n" | "\r"
 
   blockStart = "{quote" | "{panel" | "{color" | "{noformat" | "{code"
-  reserved = "*" | "{" | "}" | "_" | "~" | "-" | "+" | "^" | "[" | "]" | "|" | "??" | "\\"
 
-  ident = ~blockStart (chars | reserved)
+  formchar (a format character) = "*" | "_" | "~" | "-" | "+" | "^" | "??"
+  punct = ~alnum ~space ~nl "\u0021".."\u007E"
+  escapes = formchar | "[" | "]" | "{" | "}" | "\\"
+
+  ident = ~blockStart (chars | punct)
 
   chars = (entchar | escchar | regchar)+
   entchar (an HTML entity) = "&" "#"? alnum+ ";"
-  escchar (an escape sequence) = "\\" reserved
-  regchar (a regular character) = ~(space | nl | reserved) any
+  escchar (an escape sequence) = "\\" escapes
+  regchar (a regular character) = ~(space | nl | punct) any
 
-  uri (a URI) = (alnum | "!" | "\u0023".."\u002F" | ":" | ";" | "=" | "?" | "@" | "_" | "~")+
+  uri (a URI) = urichar+
+  urichar = alnum | "!" | "\u0023".."\u002F" | ":" | ";" | "=" | "?" | "@" | "_" | "~"
 }

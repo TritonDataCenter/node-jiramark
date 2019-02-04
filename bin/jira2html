@@ -20,6 +20,6 @@ if (process.argv.length !== 3) {
 }
 
 var contents = mod_fs.readFileSync(process.argv[2]);
-var html = mod_jiramark.markupToHTML(contents);
+var html = mod_jiramark.markupToHTML(contents.toString('utf-8'));
 
 console.log('%s', html);
