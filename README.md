@@ -1,3 +1,13 @@
+<!--
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<!--
+    Copyright (c) 2019, Joyent, Inc.
+-->
+
 # jiramark
 
 `jiramark` is a library for parsing the
@@ -19,6 +29,29 @@ Install [node.js](http://nodejs.org/), then:
 
 This will return a string representing an approximation of the JIRA markup in
 HTML. If the input cannot be parsed, then an explanatory `Error` will be thrown.
+
+You'll also want to insert CSS into the page to help format things the way you
+want. Here's an example to start with:
+
+```css
+div.panel {
+  border: 2px solid black;
+  margin-left: 1em;
+  margin-right: 1em;
+}
+div.code, div.preformatted {
+  font-family: Monospace;
+}
+div.panel, pre {
+  background-color: #eeeeee;
+}
+div.panel div {
+  padding: 9px 12px;
+}
+div.panel div.panelHeader {
+  border-bottom: 2px solid black;
+}
+```
 
 ## License
 

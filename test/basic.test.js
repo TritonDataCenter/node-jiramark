@@ -13,6 +13,52 @@
 var toHTML = require('..').markupToHTML;
 var test = require('tape');
 
+// --- Helpers
+
+function createPanelBlock(names, contents, header) {
+    var html = '<div class="';
+    var i;
+
+    for (i = 0; i < names.length; ++i) {
+        html += names[i] + ' ';
+    }
+
+    html += '">\n';
+
+    if (header) {
+        html += '<div class="';
+        for (i = 0; i < names.length; ++i) {
+            html += names[i] + 'Header ';
+        }
+        html += '"><b>' + header + '</b></div>\n';
+    }
+
+    html += '<div class="';
+    for (i = 0; i < names.length; ++i) {
+        html += names[i] + 'Content ';
+    }
+    html += '">\n' + contents + '\n</div>\n</div>';
+
+    return html;
+}
+
+function code(contents, header) {
+    return createPanelBlock(['code', 'panel'], contents, header);
+}
+
+function noformat(contents, header) {
+    contents = '<pre>' + contents + '</pre>';
+
+    return createPanelBlock(['preformatted', 'panel'], contents, header);
+}
+
+function panel(contents, header) {
+    return createPanelBlock(['panel'], contents, header);
+}
+
+
+// --- Tests
+
 test('Single Paragraph', function (t) {
     t.equals(toHTML('hello'), '<p>hello</p>');
     t.equals(toHTML('hello world'), '<p>hello world</p>');
@@ -255,60 +301,60 @@ test('Blockquotes', function (t) {
 test('{noformat} blocks', function (t) {
     // No formatting is applied w/in the block
     t.equal(toHTML('{noformat}bq. hello{noformat}'),
-        '<pre>bq. hello</pre>');
+        noformat('bq. hello'));
 
     // Different simple newline combos
     t.equal(toHTML('Example:\n{noformat}bq. hello{noformat}'),
         '<p>Example:</p>\n' +
-        '<pre>bq. hello</pre>');
+        noformat('bq. hello'));
     t.equal(toHTML('Example:\n{noformat}\nbq. hello\n{noformat}'),
         '<p>Example:</p>\n' +
-        '<pre>bq. hello&#10;</pre>');
+        noformat('bq. hello&#10;'));
 
     // First three newlines should be elided from output
     t.equal(toHTML('{noformat}\nbq. hello{noformat}'),
-        '<pre>bq. hello</pre>');
+        noformat('bq. hello'));
     t.equal(toHTML('{noformat}\n\nbq. hello{noformat}'),
-        '<pre>bq. hello</pre>');
+        noformat('bq. hello'));
     t.equal(toHTML('{noformat}\n\n\nbq. hello{noformat}'),
-        '<pre>bq. hello</pre>');
+        noformat('bq. hello'));
     t.equal(toHTML('{noformat}\n\n\n\nbq. hello{noformat}'),
-        '<pre>&#10;bq. hello</pre>');
+        noformat('&#10;bq. hello'));
     t.equal(toHTML('{noformat}\n\n\n\n\nbq. hello{noformat}'),
-        '<pre>&#10;&#10;bq. hello</pre>');
+        noformat('&#10;&#10;bq. hello'));
 
     // Leading spaces before opening
     t.equal(toHTML('    {noformat}bq. hello{noformat}'),
-        '<pre>bq. hello</pre>');
+        noformat('bq. hello'));
     t.equal(toHTML('\t{noformat}bq. hello{noformat}'),
-        '<pre>bq. hello</pre>');
+        noformat('bq. hello'));
 
     t.end();
 });
 
 test('{code} blocks', function (t) {
     t.equal(toHTML('{code}\n(+ 1 2)\n{code}'),
-        '<pre>(+ 1 2)&#10;</pre>');
+        code('<pre>(+ 1 2)&#10;</pre>'));
 
     // First three newlines should be elided from output
     t.equal(toHTML('{code}\nbq. hello{code}'),
-        '<pre>bq. hello</pre>');
+        code('<pre>bq. hello</pre>'));
     t.equal(toHTML('{code}\n\nbq. hello{code}'),
-        '<pre>bq. hello</pre>');
+        code('<pre>bq. hello</pre>'));
     t.equal(toHTML('{code}\n\n\nbq. hello{code}'),
-        '<pre>bq. hello</pre>');
+        code('<pre>bq. hello</pre>'));
     t.equal(toHTML('{code}\n\n\n\nbq. hello{code}'),
-        '<pre>&#10;bq. hello</pre>');
+        code('<pre>&#10;bq. hello</pre>'));
 
     // Trailing newlines are not elided
     t.equal(toHTML('{code}\n\n\n\nbq. hello\n\n{code}'),
-        '<pre>&#10;bq. hello&#10;&#10;</pre>');
+        code('<pre>&#10;bq. hello&#10;&#10;</pre>'));
 
-    // Options (currently we do nothing with them)
+    // Options (currently only support title)
     t.equal(toHTML('{code:sql}SELECT * FROM foo;{code}'),
-        '<pre>SELECT * FROM foo;</pre>');
+        code('<pre>SELECT * FROM foo;</pre>'));
     t.equal(toHTML('{code:title=Foo.java|borderStyle=solid}int a = 5;{code}'),
-        '<pre>int a = 5;</pre>');
+        code('<pre>int a = 5;</pre>', 'Foo.java'));
 
     t.end();
 });
@@ -340,13 +386,13 @@ test('{quote} blocks', function (t) {
 
 test('{panel} blocks', function (t) {
     t.equal(toHTML('{panel}hello world{panel}'),
-        '<div class="panel">\n<p>hello world</p>\n</div>');
+        panel('<p>hello world</p>'));
 
-    // Options (currently we do nothing with them)
+    // Options (currently only support title)
     t.equal(toHTML('{panel:title=Foo &amp; Bar}hello world{panel}'),
-        '<div class="panel">\n<p>hello world</p>\n</div>');
+        panel('<p>hello world</p>', 'Foo &amp; Bar'));
     t.equal(toHTML('{panel:title=F=B|borderStyle=dashed}hello world{panel}'),
-        '<div class="panel">\n<p>hello world</p>\n</div>');
+        panel('<p>hello world</p>', 'F=B'));
 
     t.end();
 });
@@ -366,13 +412,16 @@ test('Nested blocks', function (t) {
     var end = '{noformat}$ ls -l{noformat}{quote}';
     t.equals(toHTML(beg + ' ' + end),
         '<blockquote>\n<p>here is the command: </p>\n' +
-        '<pre>$ ls -l</pre>\n</blockquote>');
+        noformat('$ ls -l') + '\n' +
+        '</blockquote>');
     t.equals(toHTML(beg + end),
         '<blockquote>\n<p>here is the command:</p>\n' +
-        '<pre>$ ls -l</pre>\n</blockquote>');
+        noformat('$ ls -l') + '\n' +
+        '</blockquote>');
     t.equals(toHTML(beg + '\n' + end),
         '<blockquote>\n<p>here is the command:</p>\n' +
-        '<pre>$ ls -l</pre>\n</blockquote>');
+        noformat('$ ls -l') + '\n' +
+        '</blockquote>');
     t.end();
 });
 
@@ -408,7 +457,9 @@ test('Lists', function (t) {
             '# Item B\n{noformat}\nfoo\n{noformat}\nAfter\n\n' +
             'Not in the list'),
         '<ol>\n<li>Item<br />\nA</li>\n' +
-        '<li>Item B<br />\n<pre>foo&#10;</pre><br />\nAfter</li>\n</ol>\n' +
+        '<li>Item B<br />\n' +
+        noformat('foo&#10;') +
+        '<br />\nAfter</li>\n</ol>\n' +
         '<p>Not in the list</p>');
 
     // Paragraph just before list
