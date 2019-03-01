@@ -28,7 +28,6 @@ NPM		:= npm
 JS_FILES	:= $(shell find lib test -name '*.js')
 JSSTYLE_FILES	= $(JS_FILES)
 JSSTYLE_FLAGS	= -f tools/jsstyle.conf
-ESLINT		= ./node_modules/.bin/eslint
 ESLINT_FILES	= $(JS_FILES)
 
 ifeq ($(shell uname -s),SunOS)
@@ -67,7 +66,7 @@ CLEAN_FILES += ./node_modules/
 
 .PHONY: test
 test: $(ISTANBUL) $(FAUCET)
-	$(ISTANBUL) cover --print none test/run.js | $(FAUCET)
+	@$(NODE) $(ISTANBUL) cover --print none test/run.js | $(FAUCET)
 
 include ./tools/mk/Makefile.deps
 ifeq ($(shell uname -s),SunOS)

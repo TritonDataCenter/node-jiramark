@@ -49,37 +49,50 @@ JIRA {
   bullet = space* point (bullet | space)
   point (a bullet point) = "#" | "-" | "*"
 
+  /*
+   * Handling formatting characters in JIRA markup is a bit messy, since the
+   * characters themselves may wind up being used as literal characters inside
+   * the markup. To handle this, we pass the set of currently opened format
+   * characters as a parameter so that when we see them we don't interpret them
+   * as opening the format again.
+   */
   words
-   = formatted+ word* -- type1
-   | word+ -- type2
+   = formatted<empty>+ markupWord<empty>* -- type1
+   | markupWord<empty>+ -- type2
 
-  word
-   = ~punct ~bareurl ident+ -- basic
-   | simpleWord
-
-  simpleWord
-   = "[" simpleWordUntil<"|"> "|" space* uri space* "]" -- link1
+  markupWord<excl>
+   = "[" markupWordUntil<"|", excl> space* uri space* "]" -- link1
    | "[" ~"~" uri "]" -- link2
    | "[~" (~"]" (ident | space))+ "]" -- user
-   | "{{" simpleWordUntil<"}}"> "}}" -- monospace
-   | (space | ~formchar punct) formatted+ -- formatted
+   | "{{" markupWordUntil<"}}", excl> -- monospace
+   | (space | ~formchar ~char punct) ~excl formatted<excl>+ -- formatted
    | bareurl
    | ident
    | space
 
-  formatted
-   = "??" ~space simpleWordUntil<"??"> "??" -- citation
-   | "*" ~space simpleWordUntil<"*"> "*" -- strong
-   | "_" ~space simpleWordUntil<"_"> "_" -- emphasis
-   | "~" ~space simpleWordUntil<"~"> "~" -- subscript
-   | "^" ~space simpleWordUntil<"^"> "^" -- superscript
-   | "-" ~space simpleWordUntil<"-"> "-" -- deleted
-   | "+" ~space simpleWordUntil<"+"> "+" -- inserted
+  formatted<excl>
+   = "??" ~space markupWordUntil<"??", excl> -- citation
+   | "*" ~space markupWordUntil<"*", excl> -- strong
+   | "_" ~space markupWordUntil<"_", excl> -- emphasis
+   | "~" ~space markupWordUntil<"~", excl> -- subscript
+   | "^" ~space markupWordUntil<"^", excl> -- superscript
+   | "-" ~space markupWordUntil<"-", excl> -- deleted
+   | "+" ~space markupWordUntil<"+", excl> -- inserted
 
-  simpleWordUntil<stop>
-   = ~stop formatted (~stop simpleWord)* -- multiple
-   | (~stop simpleWord)+ -- simple
+  markupWordUntil<stop, excl>
+   = ~stop formatted<(stop | excl)> markupWordOne<stop, excl>* stop -- multiple
+   | ~stop markupWordOne<stop, excl>+ stop -- simple
 
+  markupWordOne<stop, excl>
+   = ~stop markupWord<(stop | excl)>
+   | formchar alnum -- formlit
+
+  /*
+   * When writing a URL directly in the text, it is only interpreted up to
+   * certain punctuation (the urlend characters), followed by a non-URL
+   * character (usually whitespace), which helps for placing it at the end of
+   * sentences.
+   */
   bareurl = "http" "s"? "://" (~urlend urichar)+
   urlend = urlexcl* ~urichar
   urlexcl = "." | ")" | "!" | "," | "'"
@@ -94,13 +107,19 @@ JIRA {
   punct = ~alnum ~space ~nl "\u0021".."\u007E"
   escapes = formchar | "[" | "]" | "{" | "}" | "\\"
 
-  ident = ~blockStart (chars | punct)
-
-  chars = (entchar | escchar | regchar)+
+  ident = ~blockStart (char | punct)
+  char = entchar | escchar | regchar
   entchar (an HTML entity) = "&" "#"? alnum+ ";"
   escchar (an escape sequence) = "\\" escapes
   regchar (a regular character) = ~(space | nl | punct) any
 
   uri (a URI) = urichar+
   urichar = alnum | "!" | "\u0023".."\u002F" | ":" | ";" | "=" | "?" | "@" | "_" | "~"
+
+  /*
+   * This is a dirty, dirty hack. Since we can't do a negative lookahead for an
+   * empty string, we need a character that shouldn't show up in the source
+   * text. We use one of the private high surrogate pair values.
+   */
+  empty = "\uDBFF"
 }

@@ -15,6 +15,9 @@
         "node": true
     },
     "rules": {
+        // Lint:
+        "strict": [ "error", "global" ],
+
         // Style:
         "func-style": [ "error", "declaration" ],
 

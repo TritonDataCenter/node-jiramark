@@ -68,7 +68,10 @@ test('HTML Entities', function (t) {
 
 test('Escaping characters', function (t) {
     t.equals(toHTML('\\{\\{noformat\\}\\}'), '<p>{{noformat}}</p>');
+    t.equals(toHTML('\\_emphasis\\_'), '<p>_emphasis_</p>');
     t.equals(toHTML('\\* this is not a list'), '<p>* this is not a list</p>');
+    t.equals(toHTML('{{\\_id}} is _virtualised_'),
+        '<p><code>_id</code> is <i>virtualised</i></p>');
 
     t.end();
 });
@@ -99,6 +102,10 @@ test('Monospaced text', function (t) {
         '<p><code>open</code>/<code>close</code></p>');
     t.equals(toHTML('{{ | sort}}'),
         '<p><code> | sort</code></p>');
+    t.equals(toHTML('{{\\_id}}'),
+        '<p><code>_id</code></p>');
+    t.equals(toHTML('Use {{FOO_BAR}} and {{BAZ_QUUX}} here.'),
+        '<p>Use <code>FOO_BAR</code> and <code>BAZ_QUUX</code> here.</p>');
 
     t.end();
 });
@@ -152,6 +159,48 @@ test('Multiple Formatting', function (t) {
         '<p><b>a</b><b>b</b><b>c</b><b>d</b></p>');
     t.equals(toHTML('hello *a**b**c**d*'),
         '<p>hello <b>a</b><b>b</b><b>c</b><b>d</b></p>');
+
+    t.end();
+});
+
+test('Format characters intended as literals', function (t) {
+    // Using "~" as "approximately" in a sentence.
+    t.equals(toHTML('The results are ~5 and ~7.'),
+        '<p>The results are ~5 and ~7.</p>');
+    t.equals(toHTML('~The results are ~5 and ~7~.'),
+        '<p><sub>The results are ~5 and ~7</sub>.</p>');
+    t.equals(toHTML('-The results are ~5 and ~7-.'),
+        '<p><del>The results are ~5 and ~7</del>.</p>');
+    t.equals(toHTML('+The results are ~5 and ~7+.'),
+        '<p><ins>The results are ~5 and ~7</ins>.</p>');
+
+    // Using "-" as "negative" in a sentence.
+    t.equals(toHTML('The results are -5 and -7.'),
+        '<p>The results are -5 and -7.</p>');
+    t.equals(toHTML('~The results are -5 and -7~.'),
+        '<p><sub>The results are -5 and -7</sub>.</p>');
+    t.equals(toHTML('-The results are -5 and -7-.'),
+        '<p><del>The results are -5 and -7</del>.</p>');
+    t.equals(toHTML('+The results are -5 and -7+.'),
+        '<p><ins>The results are -5 and -7</ins>.</p>');
+
+    // Using "+" as "positive" in a sentence.
+    t.equals(toHTML('The results are +5 and +7.'),
+        '<p>The results are +5 and +7.</p>');
+    t.equals(toHTML('~The results are +5 and +7~.'),
+        '<p><sub>The results are +5 and +7</sub>.</p>');
+    t.equals(toHTML('-The results are +5 and +7-.'),
+        '<p><del>The results are +5 and +7</del>.</p>');
+    t.equals(toHTML('+The results are +5 and +7+.'),
+        '<p><ins>The results are +5 and +7</ins>.</p>');
+
+    // Using "??" for emphasizing a question.
+    t.equals(toHTML('Question?? Another question??'),
+        '<p>Question?? Another question??</p>');
+
+    // Writing out equations.
+    t.equals(toHTML('2 + 3 * 4 + 5'),
+        '<p>2 + 3 * 4 + 5</p>');
 
     t.end();
 });
@@ -495,6 +544,10 @@ test('Links', function (t) {
         '<p><a href="http://github.com"><b>GitHub site</b></a></p>');
     t.equals(toHTML('*[GitHub|http://github.com]* site'),
         '<p><b><a href="http://github.com">GitHub</a></b> site</p>');
+
+    // Subscript in link is not username reference
+    t.equals(toHTML('[~GitHub site~|http://github.com]'),
+        '<p><a href="http://github.com"><sub>GitHub site</sub></a></p>');
 
     // Escaped characters in link text
     t.equals(toHTML('*[a \\] b|http://example.com]* site'),
