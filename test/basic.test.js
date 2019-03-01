@@ -56,6 +56,15 @@ function panel(contents, header) {
     return createPanelBlock(['panel'], contents, header);
 }
 
+function table(rows) {
+    var html = '<table><tbody>\n';
+    for (var i = 0; i < rows.length; ++i) {
+        html += '<tr>' + rows[i] + '</tr>\n';
+    }
+    html += '</tbody></table>';
+    return html;
+}
+
 
 // --- Tests
 
@@ -521,7 +530,81 @@ test('Lists', function (t) {
 });
 
 test('Tables', function (t) {
-    // XXX: Not yet implemented
+    // Single row
+    t.equals(toHTML('|a|b|c|'),
+        table(['<td>a</td><td>b</td><td>c</td>']));
+    t.equals(toHTML('||a||b||c||'),
+        table(['<th>a</th><th>b</th><th>c</th>']));
+
+    // Multiple adjacent pipes creates a single table header
+    t.equals(toHTML('|||a|||b|||c|||'),
+        table(['<th>a</th><th>b</th><th>c</th>']));
+    t.equals(toHTML('||||a||||b||||c||||'),
+        table(['<th>a</th><th>b</th><th>c</th>']));
+
+    // Multiple rows
+    t.equals(toHTML('||a||b||c||\n|d|e|f|\n|g|h|i|'), table([
+        '<th>a</th><th>b</th><th>c</th>',
+        '<td>d</td><td>e</td><td>f</td>',
+        '<td>g</td><td>h</td><td>i</td>']));
+
+    // Bars aren't needed to end a line when one starts the next
+    t.equals(toHTML('||a||b||c\n|d|e|f\n'), table([
+        '<th>a</th><th>b</th><th>c</th>',
+        '<td>d</td><td>e</td><td>f</td>']));
+
+    // Headers are in the first column
+    t.equals(toHTML('||a|b|\n||c|d|\n||e|f|'), table([
+        '<th>a</th><td>b</td>',
+        '<th>c</th><td>d</td>',
+        '<th>e</th><td>f</td>']));
+
+    // Empty cells
+    t.equals(toHTML('||a||b||c||\n| | | |'), table([
+        '<th>a</th><th>b</th><th>c</th>',
+        '<td> </td><td> </td><td> </td>']));
+
+    // Formatting in cells
+    t.equals(toHTML('||~a~|| *b* ||{{c}}||\n|^d^| -e- |+f+|'), table([
+        '<th><sub>a</sub></th><th> <b>b</b> </th><th><code>c</code></th>',
+        '<td><sup>d</sup></td><td> <del>e</del> </td><td><ins>f</ins></td>']));
+
+    // Paragraph just before table
+    t.equals(toHTML('A table:\n||a||b||c||\n|d|e|f|'),
+        '<p>A table:</p>\n' + table([
+        '<th>a</th><th>b</th><th>c</th>',
+        '<td>d</td><td>e</td><td>f</td>']));
+
+    // Paragraph just after table
+    t.equals(toHTML('||a||b||c||\n|d|e|f|\nConsider above table.'), table([
+        '<th>a</th><th>b</th><th>c</th>',
+        '<td>d</td><td>e</td><td>f</td>']) +
+        '\n<p>Consider above table.</p>');
+
+    // Blocks
+    t.equals(toHTML('|bq. This is a quote|'), table([
+        '<td><blockquote>This is a quote</blockquote></td>' ]));
+    t.equals(toHTML('|h1. This is a header|'), table([
+        '<td><h1>This is a header</h1></td>' ]));
+    t.equals(toHTML('|{noformat}a{noformat}{noformat}b{noformat}|'),
+        table(['<td>' + noformat('a') + '<br />' + noformat('b') + '</td>']));
+    t.equals(toHTML('|{noformat}a{noformat}\n{noformat}b{noformat}|'),
+        table(['<td>' + noformat('a') + '<br />' + noformat('b') + '</td>']));
+
+    // Multiline cells
+    t.equals(toHTML('|h1. Header\nText|'), table([
+        '<td><h1>Header</h1><br />Text</td>' ]));
+    t.equals(toHTML('|This is a\nmultiline paragraph|'), table([
+        '<td>This is a<br />multiline paragraph</td>' ]));
+    t.equals(toHTML('|This is a\nmultiline\nparagraph|'), table([
+        '<td>This is a<br />multiline<br />paragraph</td>' ]));
+
+    // Table nested inside cell
+    t.equals(toHTML('|{panel}\n||a|b|\n||c|d|\n{panel}|'),
+        table(['<td>' +
+        panel(table([ '<th>a</th><td>b</td>', '<th>c</th><td>d</td>'])) +
+        '</td>']));
+
     t.end();
 });
 

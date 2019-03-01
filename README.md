@@ -51,6 +51,14 @@ div.panel div {
 div.panel div.panelHeader {
   border-bottom: 2px solid black;
 }
+th, tr {
+  border: 1px solid black;
+  padding: 3px 4px;
+}
+th {
+  background-color: #eeeeee;
+  text-align: center;
+}
 ```
 
 ## License

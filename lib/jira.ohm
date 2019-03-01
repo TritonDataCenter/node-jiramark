@@ -17,18 +17,19 @@ JIRA {
   blocks = (tblock (space* nl)+)*
 
   tblock
-   = block
-   | (words (&paraEnd | nl))+ -- paragraph
+   = block<empty>
+   | (words<empty> (&paraEnd | nl))+ -- paragraph
 
-  block
-   = heading space+ words -- header
+  block<no>
+   = heading space+ words<no> -- header
    | readUntil<"noformat"> -- noformat
    | readUntil<"code"> -- code
    | namedBlock<"panel"> -- panel
    | namedBlock<"quote"> -- quote
    | namedBlock<"color"> -- color
-   | bq space+ words -- blockquote
-   | (bullet (space* ~bullet (block | words) nl)+)+ -- list
+   | bq space+ words<no> -- blockquote
+   | (bullet (space* ~bullet (block<no> | words<no>) nl)+)+ -- list
+   | row+ -- table
 
   paraEnd
    = nl? heading -- headStart
@@ -36,6 +37,7 @@ JIRA {
    | nl? bq -- bqStart
    | nl? bullet -- listStart
    | nl space* nl -- blankStart
+   | nl tablesep -- tableStart
 
   readUntil<nm> = space* "{" nm options? "}" upToThreeNl (~("{" nm) any)* "{" nm "}"
   namedBlock<nm> = space* "{" nm options? "}" nl* (~("{" nm) tblock nl*)* (~("{" nm) tblock)? "{" nm "}"
@@ -49,6 +51,14 @@ JIRA {
   bullet = space* point (bullet | space)
   point (a bullet point) = "#" | "-" | "*"
 
+  row = cell+ rowEnd
+  rowEnd
+   = tablesep? nl &tablesep -- morerows
+   | tablesep &(nl ~tablesep) -- lastrow1
+   | &(nl nl) -- lastrow2
+  cell = tablesep (block<"|"> | words<"|">) (~("|" | rowEnd) nl? (block<"|"> | words<"|">))*
+  tablesep = "|"+
+
   /*
    * Handling formatting characters in JIRA markup is a bit messy, since the
    * characters themselves may wind up being used as literal characters inside
@@ -56,9 +66,9 @@ JIRA {
    * characters as a parameter so that when we see them we don't interpret them
    * as opening the format again.
    */
-  words
-   = formatted<empty>+ markupWord<empty>* -- type1
-   | markupWord<empty>+ -- type2
+  words<no>
+   = (~no formatted<empty>)+ (~no markupWord<empty>)* -- type1
+   | (~no markupWord<empty>)+ -- type2
 
   markupWord<excl>
    = "[" markupWordUntil<"|", excl> space* uri space* "]" -- link1
