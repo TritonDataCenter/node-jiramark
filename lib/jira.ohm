@@ -103,7 +103,7 @@ JIRA {
    * character (usually whitespace), which helps for placing it at the end of
    * sentences.
    */
-  bareurl = "http" "s"? "://" (~urlend urichar)+
+  bareurl (a URL) = scheme "://" (~urlend urichar)+
   urlend = urlexcl* ~urichar
   urlexcl = "." | ")" | "!" | "," | "'"
 
@@ -123,8 +123,16 @@ JIRA {
   escchar (an escape sequence) = "\\" escapes
   regchar (a regular character) = ~(space | nl | punct) any
 
-  uri (a URI) = urichar+
+  uri (a URI)
+   = scheme "://" urichar+ -- complete
+   | "//" urichar+ -- relative
+   | "#" urichar+ -- fragment
   urichar = alnum | "!" | "\u0023".."\u002F" | ":" | ";" | "=" | "?" | "@" | "_" | "~"
+  scheme (a URI scheme)
+   = "http" "s"? -- hypertext
+   | "ftp" "s"? -- filetransfer
+   | "file" -- localfile
+   | "irc" -- chat
 
   /*
    * This is a dirty, dirty hack. Since we can't do a negative lookahead for an

@@ -108,6 +108,10 @@ test('Sentences w/ special characters', function (t) {
         '<p>notice that **double stars** do nothing</p>');
     t.equals(toHTML('Use the doThing(arg[, opt]) function'),
         '<p>Use the doThing(arg[, opt]) function</p>');
+    t.equals(toHTML('Array access is arr[idx]'),
+        '<p>Array access is arr[idx]</p>');
+    t.equals(toHTML('__ctype_mask[EOF] has been working by accident'),
+        '<p>__ctype_mask[EOF] has been working by accident</p>');
 
     t.end();
 });
@@ -609,6 +613,7 @@ test('Tables', function (t) {
 });
 
 test('Bare URLs', function (t) {
+    // HTTP(S)
     t.equals(toHTML('http://example.com'),
         '<p><a href="http://example.com">http://example.com</a></p>');
     t.equals(toHTML('https://example.com'),
@@ -616,6 +621,24 @@ test('Bare URLs', function (t) {
     t.equals(toHTML('https://example.com/foo?bar=baz&quux=m#hello'),
         '<p><a href="https://example.com/foo?bar=baz&quux=m#hello">' +
         'https://example.com/foo?bar=baz&#38;quux=m#hello</a></p>');
+
+    // FTP
+    t.equals(toHTML('ftp://ftp.gnu.org/gnu/grep/'),
+        '<p><a href="ftp://ftp.gnu.org/gnu/grep/">' +
+        'ftp://ftp.gnu.org/gnu/grep/</a></p>');
+    t.equals(toHTML('ftps://ftp.gnu.org/gnu/grep/'),
+        '<p><a href="ftps://ftp.gnu.org/gnu/grep/">' +
+        'ftps://ftp.gnu.org/gnu/grep/</a></p>');
+
+    // IRC
+    t.equals(toHTML('irc://irc.freenode.net:6667/smartos'),
+        '<p><a href="irc://irc.freenode.net:6667/smartos">' +
+        'irc://irc.freenode.net:6667/smartos</a></p>');
+
+    // Local file:// URL
+    t.equals(toHTML('file:///home/cpm/src/node-jiramark'),
+        '<p><a href="file:///home/cpm/src/node-jiramark">' +
+        'file:///home/cpm/src/node-jiramark</a></p>');
 
     // JIRA DWIM behaviour for ending bare URLs
     t.equals(toHTML('(See http://example.com)'),
@@ -635,11 +658,23 @@ test('Bare URLs', function (t) {
 });
 
 test('Links', function (t) {
+    // Several different protocols
     t.equals(toHTML('[http://github.com]'),
         '<p><a href="http://github.com">http://github.com</a></p>');
     t.equals(toHTML('[https://example.com/foo?bar=baz&quux=m#hello]'),
         '<p><a href="https://example.com/foo?bar=baz&quux=m#hello">' +
         'https://example.com/foo?bar=baz&#38;quux=m#hello</a></p>');
+
+    // Relative reference
+    t.equals(toHTML('[//example.com]'),
+        '<p><a href="//example.com">//example.com</a></p>');
+
+    // Fragment reference
+    t.equals(toHTML('[#hello]'),
+        '<p><a href="#hello">hello</a></p>');
+    t.equals(toHTML('[#/c/2115/1/usr/src/uts/common/exec/elf/elf.c]'),
+        '<p><a href="#/c/2115/1/usr/src/uts/common/exec/elf/elf.c">' +
+        '/c/2115/1/usr/src/uts/common/exec/elf/elf.c</a></p>');
 
     // URLs with text
     var jnj = 'joyent/node-jiramark';
@@ -690,6 +725,16 @@ test('Links', function (t) {
         '<p><b><a href="http://example.com">a [ b</a></b> site</p>');
     t.equals(toHTML('*[a \\* b|http://example.com]* site'),
         '<p><b><a href="http://example.com">a * b</a></b> site</p>');
+
+    // Unrecognized schemes don't turn into links
+    t.equals(toHTML('[tel:+1-201-555-0123]'),
+        '<p>[tel:+1-201-555-0123]</p>');
+    t.equals(toHTML('[urn:oasis:names:specification:docbook:dtd:xml:4.1.2]'),
+        '<p>[urn:oasis:names:specification:docbook:dtd:xml:4.1.2]</p>');
+    t.equals(toHTML('[news:comp.infosystems.www.servers.unix]'),
+        '<p>[news:comp.infosystems.www.servers.unix]</p>');
+    t.equals(toHTML('[mxc://example.com/foobarbaz]'),
+        '<p>[mxc://example.com/foobarbaz]</p>');
 
     t.end();
 });
