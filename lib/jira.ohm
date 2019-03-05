@@ -14,7 +14,7 @@
 JIRA {
   Document = blocks tblock?
 
-  blocks = (tblock (space* nl)+)*
+  blocks = blankl* (tblock blankl+)*
 
   tblock
    = block<empty>
@@ -107,9 +107,10 @@ JIRA {
   urlend = urlexcl* ~urichar
   urlexcl = "." | ")" | "!" | "," | "'"
 
-  space := " " | "\t"
+  space := " " | "\t" | "\u00a0"
 
   nl (a newline) = "\r\n" | "\n" | "\r"
+  blankl = space* nl
 
   blockStart = "{quote" | "{panel" | "{color" | "{noformat" | "{code"
 

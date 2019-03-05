@@ -81,6 +81,10 @@ test('Single Paragraph', function (t) {
     t.equals(toHTML('hello world,\nand\ngood\nmorning!'),
         '<p>hello world,<br />\nand<br />\ngood<br />\nmorning!</p>');
 
+    // Leading lines at start of document are okay
+    t.equals(toHTML('\nhello world'), '<p>hello world</p>');
+    t.equals(toHTML('\n\n\nhello world'), '<p>hello world</p>');
+
     // Formatting at start of line that could be confused for bullets
     t.equals(toHTML('hello world,\n*and*\n-good morning!-'),
         '<p>hello world,<br />\n' +
@@ -141,6 +145,10 @@ test('Multiple Paragraphs', function (t) {
 
     // Lines that are nothing but space can separate blocks
     t.equals(toHTML('this is paragraph 1\n    \nthis is paragraph 2'),
+        '<p>this is paragraph 1</p>\n<p>this is paragraph 2</p>');
+    t.equals(toHTML('this is paragraph 1\n\t\t\nthis is paragraph 2'),
+        '<p>this is paragraph 1</p>\n<p>this is paragraph 2</p>');
+    t.equals(toHTML('this is paragraph 1\n\u00a0\nthis is paragraph 2'),
         '<p>this is paragraph 1</p>\n<p>this is paragraph 2</p>');
 
     // Line breaks within a paragraph are preserved
