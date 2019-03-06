@@ -10,6 +10,7 @@
 
 'use strict';
 
+var mod_url = require('url');
 var toHTML = require('..').markupToHTML;
 var test = require('tape');
 
@@ -699,6 +700,12 @@ test('Links', function (t) {
         jnj + '#1</a></p>');
 
     // Spaces are okay around the URL
+    t.equals(toHTML('[ http://github.com]'),
+        '<p><a href="http://github.com">http://github.com</a></p>');
+    t.equals(toHTML('[http://github.com ]'),
+        '<p><a href="http://github.com">http://github.com</a></p>');
+    t.equals(toHTML('[    http://github.com    ]'),
+        '<p><a href="http://github.com">http://github.com</a></p>');
     t.equals(toHTML('[GitHub| http://github.com]'),
         '<p><a href="http://github.com">GitHub</a></p>');
     t.equals(toHTML('[GitHub|http://github.com ]'),
@@ -747,14 +754,78 @@ test('Links', function (t) {
     t.end();
 });
 
-test('Change Opening Link', function (t) {
+test('Attachments', function (t) {
+    // Just filename
+    t.equals(toHTML('[^foo.gif]'),
+        '<p><a href="#">foo.gif</a></p>');
+
+    // With text
+    t.equals(toHTML('[example|^foo.gif]'),
+        '<p><a href="#">example</a></p>');
+
+    // Spaces are okay around the filename
+    t.equals(toHTML('[^  foo.gif]'),
+        '<p><a href="#">foo.gif</a></p>');
+    t.equals(toHTML('[^foo.gif  ]'),
+        '<p><a href="#">foo.gif</a></p>');
+    t.equals(toHTML('[^  foo.gif  ]'),
+        '<p><a href="#">foo.gif</a></p>');
+    t.equals(toHTML('[example|^  foo.gif]'),
+        '<p><a href="#">example</a></p>');
+    t.equals(toHTML('[example|^foo.gif  ]'),
+        '<p><a href="#">example</a></p>');
+    t.equals(toHTML('[example|^  foo.gif  ]'),
+        '<p><a href="#">example</a></p>');
+
+    t.end();
+});
+
+test('Embedding', function (t) {
+    // Basic
+    t.equals(toHTML('!foo.gif!'),
+        '<p>[Attachment: <tt>foo.gif</tt>]</p>');
+    t.equals(toHTML('!example.mov!'),
+        '<p>[Attachment: <tt>example.mov</tt>]</p>');
+
+    // URL
+    t.equals(toHTML('!http://www.host.com/image.gif!'),
+        '<p>[Attachment: <tt>http://www.host.com/image.gif</tt>]</p>');
+
+    // Options
+    t.equals(toHTML('!foo.gif|thumbnail!'),
+        '<p>[Attachment: <tt>foo.gif</tt>]</p>');
+    t.equals(toHTML('!media.wmv|id=media!'),
+        '<p>[Attachment: <tt>media.wmv</tt>]</p>');
+    t.equals(toHTML('!foo.gif|align=right, vspace=4!'),
+        '<p>[Attachment: <tt>foo.gif</tt>]</p>');
+
+    t.end();
+});
+
+test('Overriding HTML tags/attributes', function (t) {
     var ops = {
         formatLink: function (link, text) {
             return '<a rel="noopener noreferrer" target="_blank" href="' +
                 link + '">' + text + '</a>';
+        },
+        formatAttachmentLink: function (href, text) {
+            return '<a href="attachments/' + href + '">' + text + '</a>';
+        },
+        formatEmbedded: function (href, opts) {
+            var url = mod_url.parse(href);
+            if (url.protocol === 'http:' || url.protocol === 'https:') {
+                return '<img href="' + href + '" />';
+            }
+
+            if (opts.length > 0 && opts[0] === 'thumbnail') {
+                return '<img href="thumbnails/' + href + '" />';
+            } else {
+                return '<img href="attachments/' + href + '" />';
+            }
         }
     };
 
+    // Normal links
     t.equals(toHTML('http://example.com', ops),
         '<p><a rel="noopener noreferrer" target="_blank" ' +
         'href="http://example.com">http://example.com</a></p>');
@@ -764,6 +835,20 @@ test('Change Opening Link', function (t) {
     t.equals(toHTML('[example|http://example.com]', ops),
         '<p><a rel="noopener noreferrer" target="_blank" ' +
         'href="http://example.com">example</a></p>');
+
+    // Links to attachments
+    t.equals(toHTML('[^foo.gif]', ops),
+        '<p><a href="attachments/foo.gif">foo.gif</a></p>');
+    t.equals(toHTML('[example|^foo.gif]', ops),
+        '<p><a href="attachments/foo.gif">example</a></p>');
+
+    // Embedding
+    t.equals(toHTML('!foo.gif!', ops),
+        '<p><img href="attachments/foo.gif" /></p>');
+    t.equals(toHTML('!foo.gif|thumbnail!', ops),
+        '<p><img href="thumbnails/foo.gif" /></p>');
+    t.equals(toHTML('!http://www.host.com/image.gif!', ops),
+        '<p><img href="http://www.host.com/image.gif" /></p>');
 
     t.end();
 });

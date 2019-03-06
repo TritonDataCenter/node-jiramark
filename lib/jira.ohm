@@ -71,9 +71,10 @@ JIRA {
    | (~no markupWord<empty>)+ -- type2
 
   markupWord<excl>
-   = "[" markupWordUntil<"|", excl> space* uri space* "]" -- link1
-   | "[" ~"~" uri "]" -- link2
+   = "[" markupWordUntil<"|", excl>? space* uri space* "]" -- link
+   | "[" markupWordUntil<"|", excl>? "^" space* urichars space* "]" -- attachment
    | "[~" (~"]" (ident | space))+ "]" -- user
+   | "!" (~"!" urichar)+ ("|" (~"!" (ident | space))+)? "!"  -- embed
    | "{{" markupWordUntil<"}}", excl> -- monospace
    | (space | ~formchar ~char punct) ~excl formatted<excl>+ -- formatted
    | bareurl
@@ -125,9 +126,10 @@ JIRA {
   regchar (a regular character) = ~(space | nl | punct) any
 
   uri (a URI)
-   = scheme "://" urichar+ -- complete
-   | "//" urichar+ -- relative
-   | "#" urichar+ -- fragment
+   = scheme "://" urichars -- complete
+   | "//" urichars -- relative
+   | "#" urichars -- fragment
+  urichars = urichar+
   urichar = alnum | "!" | "\u0023".."\u002F" | ":" | ";" | "=" | "?" | "@" | "_" | "~"
   scheme (a URI scheme)
    = "http" "s"? -- hypertext
