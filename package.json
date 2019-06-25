@@ -1,7 +1,7 @@
 {
     "name": "jiramark",
     "description": "Parser for the JIRA markup language",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "author": "Joyent (joyent.com)",
     "keywords": [
         "jira"
@@ -24,7 +24,7 @@
         "istanbul": "^0.3.6",
         "faucet": "0.0.1",
         "tape": "^3.5.0",
-        "eslint": "4.13.1",
+        "eslint": "4.19.1",
         "eslint-plugin-joyent": "~2.1.0"
     },
     "scripts": {

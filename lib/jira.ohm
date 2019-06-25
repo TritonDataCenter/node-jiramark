@@ -18,7 +18,7 @@ JIRA {
 
   tblock
    = block<empty>
-   | (words<empty> (&paraEnd | nl))+ -- paragraph
+   | paragraph
 
   block<no>
    = heading space+ words<no> -- header
@@ -27,25 +27,46 @@ JIRA {
    | namedBlock<"panel"> -- panel
    | namedBlock<"quote"> -- quote
    | namedBlock<"color"> -- color
-   | bq space+ words<no> -- blockquote
+   | bq space* words<no> -- blockquote
    | (bullet (space* ~bullet (block<no> | words<no>) nl)+)+ -- list
    | row+ -- table
+
+  paragraph = paraLine+
+
+  paraLine
+   = simplestr (&paraEnd | nl)
+   | words<empty> (&paraEnd | nl)
 
   paraEnd
    = nl? heading -- headStart
    | nl? blockStart -- blockStart
    | nl? bq -- bqStart
-   | nl? bullet -- listStart
+   | nl bullet -- listStart
    | nl space* nl -- blankStart
    | nl tablesep -- tableStart
 
-  readUntil<nm> = space* "{" nm options? "}" upToThreeNl (~("{" nm) any)* "{" nm "}"
-  namedBlock<nm> = space* "{" nm options? "}" nl* (~("{" nm) tblock nl*)* (~("{" nm) tblock)? "{" nm "}"
+  readUntil<nm> = space* "{" nm options? "}" upToThreeNl readUntilInner<nm>* "{" nm "}"
+  namedBlock<nm> = space* "{" nm options? "}" nl* (~("{" nm) tblock nl*)* "{" nm "}"
   upToThreeNl = nl? nl? nl?
 
-  options = ":" (~"}" (ident | space))*
+  readUntilInner<nm>
+   = nonlcurlies
+   | ~("{" nm) any
 
-  heading = "h1." | "h2." | "h3." | "h4." | "h5." | "h6."
+  /*
+   * The noncurly rule is:
+   *
+   *     nonlcurly = ~"{" any
+   *
+   * Since our alternative parser doesn't convert the negative lookaheads into
+   * negated character classes, we don't write it out in this .ohm file, but
+   * put it directly into the base definitions as a regular expression.
+   */
+  nonlcurlies = nonlcurly+
+
+  options = ":" (~"}" ident)*
+
+  heading = "h" "1".."6" "."
   bq = "bq."
 
   bullet = space* point (bullet | space)
@@ -73,13 +94,12 @@ JIRA {
   markupWord<excl>
    = "[" markupWordUntil<"|", excl>? space* uri space* "]" -- link
    | "[" markupWordUntil<"|", excl>? "^" space* urichars space* "]" -- attachment
-   | "[~" (~"]" (ident | space))+ "]" -- user
-   | "!" (~"!" urichar)+ ("|" (~"!" (ident | space))+)? "!"  -- embed
+   | "[~" (~"]" ident)+ "]" -- user
+   | "!" (~"!" filechar)+ ("|" (~"!" ident)+)? "!"  -- embed
    | "{{" markupWordUntil<"}}", excl> -- monospace
    | (space | ~formchar ~char punct) ~excl formatted<excl>+ -- formatted
    | bareurl
    | ident
-   | space
 
   formatted<excl>
    = "??" ~space markupWordUntil<"??", excl> -- citation
@@ -113,17 +133,19 @@ JIRA {
   nl (a newline) = "\r\n" | "\n" | "\r"
   blankl = space* nl
 
-  blockStart = "{quote" | "{panel" | "{color" | "{noformat" | "{code"
+  blockStart = "{" ("quote" | "panel" | "color" | "noformat" | "code")
 
   formchar (a format character) = "*" | "_" | "~" | "-" | "+" | "^" | "??"
-  punct = ~alnum ~space ~nl "\u0021".."\u007E"
+  punct = "\u0021".."\u002f" | "\u003a".."\u0040" | "\u005b".."\u0060" | "\u007b".."\u007E"
   escapes = formchar | "[" | "]" | "{" | "}" | "\\"
 
-  ident = ~blockStart (char | punct)
-  char = entchar | escchar | regchar
+  ident = ~blockStart (char | punct | ~nl any)
+  char = ascchar | space | entchar | escchar
   entchar (an HTML entity) = "&" "#"? alnum+ ";"
   escchar (an escape sequence) = "\\" escapes
-  regchar (a regular character) = ~(space | nl | punct) any
+  ascchar (an ASCII alphanumeric character) = alnum+
+
+  simplestr = (ascchar | entchar | space | ":" | "." | "'" | ",")+
 
   uri (a URI)
    = scheme "://" urichars -- complete
@@ -131,6 +153,7 @@ JIRA {
    | "#" urichars -- fragment
   urichars = urichar+
   urichar = alnum | "!" | "\u0023".."\u002F" | ":" | ";" | "=" | "?" | "@" | "_" | "~"
+  filechar = urichar | " "
   scheme (a URI scheme)
    = "http" "s"? -- hypertext
    | "ftp" "s"? -- filetransfer

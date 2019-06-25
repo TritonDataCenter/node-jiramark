@@ -299,6 +299,8 @@ test('Headings', function (t) {
 });
 
 test('Blockquotes', function (t) {
+    t.equals(toHTML('bq.Hello World'),
+        '<blockquote>Hello World</blockquote>');
     t.equals(toHTML('bq. Hello World'),
         '<blockquote>Hello World</blockquote>');
     t.equals(toHTML('bq. Hello *World*'),
@@ -350,6 +352,10 @@ test('{noformat} blocks', function (t) {
         noformat('bq. hello'));
     t.equal(toHTML('\t{noformat}bq. hello{noformat}'),
         noformat('bq. hello'));
+
+    // Inner curly characters
+    t.equal(toHTML('{noformat}}{{noformat}'),
+        noformat('}{'));
 
     t.end();
 });
@@ -790,6 +796,10 @@ test('Embedding', function (t) {
     // URL
     t.equals(toHTML('!http://www.host.com/image.gif!'),
         '<p>[Attachment: <tt>http://www.host.com/image.gif</tt>]</p>');
+
+    // Filenames with spaces
+    t.equals(toHTML('!Screenshot-2018-6-6 - PG Stats(1).png|thumbnail!'),
+        '<p>[Attachment: <tt>Screenshot-2018-6-6 - PG Stats(1).png</tt>]</p>');
 
     // Options
     t.equals(toHTML('!foo.gif|thumbnail!'),
