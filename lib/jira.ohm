@@ -30,7 +30,6 @@ JIRA {
    | readUntil<"code"> -- code
    | namedBlock<"panel"> -- panel
    | namedBlock<"quote"> -- quote
-   | namedBlock<"color"> -- color
    | bq space* words<no> -- blockquote
    | (bullet (space* ~bullet iblock<no> (nl? | &no))+)+ -- list
    | ~no row+ -- table
@@ -100,6 +99,7 @@ JIRA {
    | "[" markupWordUntil<"|", excl>? "^" space* urichars space* "]" -- attachment
    | "[~" (~"]" ident)+ "]" -- user
    | "!" (~"!" filechar)+ ("|" (~"!" ident)+)? "!"  -- embed
+   | "{color" options? "}" markupWordUntil<"{color}", excl> -- color
    | "{{" markupWordUntil<"}}", excl> -- monospace
    | (space | ~formchar ~char punct) ~excl formatted<excl>+ -- formatted
    | bareurl
@@ -137,7 +137,7 @@ JIRA {
   nl (a newline) = "\r\n" | "\n" | "\r"
   blankl = space* nl
 
-  blockStart = "{" ("quote" | "panel" | "color" | "noformat" | "code")
+  blockStart = "{" ("quote" | "panel" | "noformat" | "code")
 
   formchar (a format character) = "*" | "_" | "~" | "-" | "+" | "^" | "??"
   punct = "\u0021".."\u002f" | "\u003a".."\u0040" | "\u005b".."\u0060" | "\u007b".."\u007E"

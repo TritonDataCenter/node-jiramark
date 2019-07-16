@@ -430,11 +430,18 @@ test('{panel} blocks', function (t) {
 
 test('{color} blocks', function (t) {
     t.equal(toHTML('{color:red}hello{color}'),
-        '<div style="color: red">\n<p>hello</p>\n</div>');
+        '<p><span style="color: red">hello</span></p>');
     t.equal(toHTML('{color:blue}hello{color}'),
-        '<div style="color: blue">\n<p>hello</p>\n</div>');
+        '<p><span style="color: blue">hello</span></p>');
     t.equal(toHTML('{color:#ffffff}hello{color}'),
-        '<div style="color: #ffffff">\n<p>hello</p>\n</div>');
+        '<p><span style="color: #ffffff">hello</span></p>');
+
+    // In the middle of a sentence
+    t.equal(toHTML('This is a {color:red}red{color} word'),
+        '<p>This is a <span style="color: red">red</span> word</p>');
+    t.equal(toHTML('Using {color:#3d3c40}hex{color}.'),
+        '<p>Using <span style="color: #3d3c40">hex</span>.</p>');
+
     t.end();
 });
 
