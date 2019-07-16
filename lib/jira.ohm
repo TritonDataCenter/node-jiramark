@@ -14,7 +14,7 @@
 JIRA {
   Document = blocks tblock?
 
-  blocks = blankl* (tblock blankl+)*
+  blocks = blankl* (tblock blankl*)*
 
   tblock
    = block<empty>
@@ -32,7 +32,7 @@ JIRA {
    | namedBlock<"quote"> -- quote
    | namedBlock<"color"> -- color
    | bq space* words<no> -- blockquote
-   | (bullet (space* ~bullet iblock<no> (nl | &no))+)+ -- list
+   | (bullet (space* ~bullet iblock<no> (nl? | &no))+)+ -- list
    | ~no row+ -- table
 
   paragraph = paraLine+

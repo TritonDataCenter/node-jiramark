@@ -328,6 +328,9 @@ test('{noformat} blocks', function (t) {
         noformat('bq. hello'));
 
     // Different simple newline combos
+    t.equal(toHTML('Example: {noformat}bq. hello{noformat}'),
+        '<p>Example: </p>\n' +
+        noformat('bq. hello'));
     t.equal(toHTML('Example:\n{noformat}bq. hello{noformat}'),
         '<p>Example:</p>\n' +
         noformat('bq. hello'));
@@ -469,6 +472,14 @@ test('Lists', function (t) {
         '<ul>\n<li><b>Hello</b> World</li>\n</ul>');
     t.equals(toHTML('- -Hello World-'),
         '<ul>\n<li><del>Hello World</del></li>\n</ul>');
+
+    // Blocks in an item
+    t.equals(toHTML('- {noformat}hello{noformat}'),
+        '<ul>\n<li>' + noformat('hello') + '</li>\n</ul>');
+    t.equals(toHTML('- Example: {noformat}hello{noformat}'),
+        '<ul>\n<li>Example: <br />\n' + noformat('hello') + '</li>\n</ul>');
+    t.equals(toHTML('- Example:\n{noformat}hello{noformat}'),
+        '<ul>\n<li>Example:<br />\n' + noformat('hello') + '</li>\n</ul>');
 
     // Multiple items in a list
     t.equals(toHTML('# Hello\n# World'),
