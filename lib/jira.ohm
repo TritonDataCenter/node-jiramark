@@ -20,6 +20,10 @@ JIRA {
    = block<empty>
    | paragraph
 
+  iblock<no>
+   = block<no>
+   | words<no>
+
   block<no>
    = heading space+ words<no> -- header
    | readUntil<"noformat"> -- noformat
@@ -28,8 +32,8 @@ JIRA {
    | namedBlock<"quote"> -- quote
    | namedBlock<"color"> -- color
    | bq space* words<no> -- blockquote
-   | (bullet (space* ~bullet (block<no> | words<no>) nl)+)+ -- list
-   | row+ -- table
+   | (bullet (space* ~bullet iblock<no> (nl | &no))+)+ -- list
+   | ~no row+ -- table
 
   paragraph = paraLine+
 
@@ -77,7 +81,7 @@ JIRA {
    = tablesep? nl &tablesep -- morerows
    | tablesep &(nl ~tablesep) -- lastrow1
    | &(nl nl) -- lastrow2
-  cell = tablesep (block<"|"> | words<"|">) (~("|" | rowEnd) nl? (block<"|"> | words<"|">))*
+  cell = tablesep iblock<"|"> (~("|" | rowEnd) nl? iblock<"|">)*
   tablesep = "|"+
 
   /*

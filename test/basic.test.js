@@ -624,6 +624,33 @@ test('Tables', function (t) {
         panel(table([ '<th>a</th><td>b</td>', '<th>c</th><td>d</td>'])) +
         '</td>']));
 
+    // Unordered list inside a cell
+    t.equals(toHTML('| - foo |'), table([
+        '<td><ul>\n<li>foo </li>\n</ul></td>']));
+    t.equals(toHTML('| - foo\n- bar|'), table([
+        '<td><ul>\n<li>foo</li>\n<li>bar</li>\n</ul></td>']));
+    t.equals(toHTML('| - foo\n- bar\n|'), table([
+        '<td><ul>\n<li>foo</li>\n<li>bar</li>\n</ul></td>']));
+
+    // Ordered list inside a cell
+    t.equals(toHTML('| # foo |'), table([
+        '<td><ol>\n<li>foo </li>\n</ol></td>']));
+    t.equals(toHTML('| # foo\n# bar|'), table([
+        '<td><ol>\n<li>foo</li>\n<li>bar</li>\n</ol></td>']));
+    t.equals(toHTML('| # foo\n# bar\n|'), table([
+        '<td><ol>\n<li>foo</li>\n<li>bar</li>\n</ol></td>']));
+
+    // Bullet characters inside a cell that don't start a list
+    t.equals(toHTML('| A | - | - |\n| B | - | - |'), table([
+        '<td> A </td><td> - </td><td> - </td>',
+        '<td> B </td><td> - </td><td> - </td>']));
+    t.equals(toHTML('| A | * | * |\n| B | * | * |'), table([
+        '<td> A </td><td> * </td><td> * </td>',
+        '<td> B </td><td> * </td><td> * </td>']));
+    t.equals(toHTML('| A | # | # |\n| B | # | # |'), table([
+        '<td> A </td><td> # </td><td> # </td>',
+        '<td> B </td><td> # </td><td> # </td>']));
+
     t.end();
 });
 
